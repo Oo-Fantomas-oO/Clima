@@ -9,14 +9,19 @@ import UIKit
 
 class WeatherViewController: UIViewController {
 
-    private let mainStackView       = UIStackView()
-    private var searchStackView     = UIStackView()
-    private var backgroundImageView = UIImageView()
+    let mainStackView        = UIStackView()
+    var searchStackView      = UIStackView()
+    var temperatureStackView = UIStackView()
     
-    private let searchButton        = UIButton()
-    private let locationButton      = UIButton()
+    var backgroundImageView = UIImageView()
+    var weatherImageView    = UIImageView()
+    
+    let searchButton        = UIButton()
+    let locationButton      = UIButton()
 
-    private let searchTextField     = UITextField()
+    let searchTextField     = UITextField()
+    
+    var weatherManager = WeatherManager()
     
 //    var myView: UIView = {
 //        let myView = UIView(frame: CGRect(x: 0, y: 0, width: 80, height: 150))
@@ -28,13 +33,17 @@ class WeatherViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        searchTextField.delegate = self
+        
         configurateMainStackView(backGroundColor: .clear, axis: .vertical, aligment: .trailing,
-                                 distribution: .fillProportionally, spacing: 5.0)
+                                 distribution: .fill, spacing: 5.0)
         
         assignBackgroundImageView()
         
         searchStackView = configurateNestedStackView(backGroundColor: .clear, axis: .horizontal,
-                                                         alignment: .fill, distribution: .fill, spacing: 10.0)
+                                                         alignment: .fill, distribution: .fill, spacing: 0.0)
+        searchStackView.leadingAnchor.constraint(equalTo: mainStackView.leadingAnchor, constant: 0.0).isActive    = true
+        searchStackView.trailingAnchor.constraint(equalTo: mainStackView.trailingAnchor, constant: -0.0).isActive = true
         
         setupLocationButton()
         searchStackView.addArrangedSubview(locationButton)
@@ -43,7 +52,26 @@ class WeatherViewController: UIViewController {
         setupSearchButton()
         searchStackView.addArrangedSubview(searchButton)
         
+        setupWeatherImageView()
+        
+        temperatureStackView = configurateNestedStackView(backGroundColor: .clear, axis: .horizontal,
+                                                          alignment: .fill, distribution: .fill, spacing: 0.0)
+        
+        let temperatureValueLabel = setupCustomLabel(with: "21", font: .systemFont(ofSize: 80.0, weight: .black),
+                                                          textColor: .black, textAlignment: .left, numOfLines: 1)
+        let temperatureDegreeLabel = setupCustomLabel(with: "˚", font: .systemFont(ofSize: 100.0, weight: .light),
+                                                           textColor: .black, textAlignment: .right, numOfLines: 1)
+        let temperatureSymbolLabel = setupCustomLabel(with: "C", font: .systemFont(ofSize: 100.0, weight: .light),
+                                                           textColor: .black, textAlignment: .right, numOfLines: 1)
 
+        temperatureStackView.addArrangedSubview(temperatureValueLabel)
+        temperatureStackView.addArrangedSubview(temperatureDegreeLabel)
+        temperatureStackView.addArrangedSubview(temperatureSymbolLabel)
+        
+        let cityNameLabel = setupCustomLabel(with: "Kyiv", font: .systemFont(ofSize: 50.0, weight: .light),
+                                             textColor: .black, textAlignment: .center, numOfLines: 1)
+        
+        mainStackView.addArrangedSubview(cityNameLabel)
     }
 
     //MARK: - Configurate Main and Nested Stack View
@@ -81,8 +109,7 @@ class WeatherViewController: UIViewController {
         stackView.distribution = distribution
         
         stackView.translatesAutoresizingMaskIntoConstraints                                                 = false
-        stackView.leadingAnchor.constraint(equalTo: mainStackView.leadingAnchor, constant: 0.0).isActive    = true
-        stackView.trailingAnchor.constraint(equalTo: mainStackView.trailingAnchor, constant: -0.0).isActive = true
+        
         return stackView
     }
     
@@ -92,13 +119,12 @@ class WeatherViewController: UIViewController {
         view.insertSubview(backgroundImageView, at: 0)
         
         backgroundImageView.image = UIImage(named: "background")
-//        backgroundImageView.frame = CGRect(x: 0, y: 0, width: view.bounds.size.width, height: view.bounds.size.height)
         backgroundImageView.contentMode = .scaleAspectFill
         
-        setupConstraints()
+        setupImageViewConstraints()
     }
     
-    func setupConstraints() {
+    func setupImageViewConstraints() {
         backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -108,12 +134,17 @@ class WeatherViewController: UIViewController {
         ])
     }
     
-    func configurateWeatherImageView () -> UIImageView {
-        let weatherImage = UIImageView()
-        weatherImage.image = UIImage(named: "rain")
-        weatherImage.contentMode = .scaleAspectFit
-                
-        return weatherImage
+    func setupWeatherImageView() {
+        let image = UIImage(systemName: "sun.max")
+        weatherImageView.image = image
+        weatherImageView.tintColor = .systemGray
+        weatherImageView.contentMode = .scaleAspectFill
+                        
+        weatherImageView.translatesAutoresizingMaskIntoConstraints = false
+        weatherImageView.heightAnchor.constraint(equalToConstant: 150.0).isActive = true
+        weatherImageView.widthAnchor.constraint(equalToConstant: 150.0).isActive = true
+        
+        mainStackView.addArrangedSubview(weatherImageView)
     }
     
     //MARK: - Setup Search ans Location Button
@@ -138,8 +169,8 @@ class WeatherViewController: UIViewController {
     
     func setupButtonConstraints(_ button: UIButton) {
         button.translatesAutoresizingMaskIntoConstraints             = false
-        button.heightAnchor.constraint(equalToConstant: 40).isActive = true
-        button.widthAnchor.constraint(equalToConstant: 40).isActive  = true
+        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        button.widthAnchor.constraint(equalToConstant: 50).isActive  = true
     }
     
     //MARK: - Setup Search Text Field
@@ -152,6 +183,23 @@ class WeatherViewController: UIViewController {
         searchTextField.font = UIFont.boldSystemFont(ofSize: 25.0)
         searchTextField.autocapitalizationType = .words
         searchTextField.returnKeyType = .go
+        searchTextField.translatesAutoresizingMaskIntoConstraints             = false
+    }
+    
+    //MARK: - Setup City and Temperature Label
+    
+    func setupCustomLabel(with text: String, font: UIFont, textColor: UIColor,
+                                  textAlignment: NSTextAlignment, numOfLines: Int) -> UILabel {
+        let myLable = UILabel()
+        myLable.text = text
+        myLable.font = font
+        myLable.textColor = textColor
+        myLable.textAlignment = textAlignment
+        myLable.numberOfLines = numOfLines
+      
+        myLable.translatesAutoresizingMaskIntoConstraints = false
+        
+        return myLable
     }
         
     //MARK: - Button action
