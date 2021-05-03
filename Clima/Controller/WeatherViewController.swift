@@ -6,34 +6,38 @@
 //
 
 import UIKit
+import CoreLocation
 
 class WeatherViewController: UIViewController {
 
-    let mainStackView        = UIStackView()
-    var searchStackView      = UIStackView()
-    var temperatureStackView = UIStackView()
+    let mainStackView         = UIStackView()
+    var searchStackView       = UIStackView()
+    var temperatureStackView  = UIStackView()
     
-    var backgroundImageView = UIImageView()
-    var weatherImageView    = UIImageView()
+    var backgroundImageView   = UIImageView()
+    var weatherImageView      = UIImageView()
     
-    let searchButton        = UIButton()
-    let locationButton      = UIButton()
+    let searchButton          = UIButton()
+    let locationButton        = UIButton()
 
-    let searchTextField     = UITextField()
+    let searchTextField       = UITextField()
+    var temperatureValueLabel = UILabel()
+    var cityNameLabel         = UILabel()
+    
     
     var weatherManager = WeatherManager()
-    
-//    var myView: UIView = {
-//        let myView = UIView(frame: CGRect(x: 0, y: 0, width: 80, height: 150))
-//        myView.translatesAutoresizingMaskIntoConstraints = false
-//        myView.backgroundColor = .systemPink
-//        return myView
-//    }()
+    let locationManager = CLLocationManager()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        weatherManager.delegate  = self
         searchTextField.delegate = self
+        locationManager.delegate = self
+
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.requestLocation()
+        
         
         configurateMainStackView(backGroundColor: .clear, axis: .vertical, aligment: .trailing,
                                  distribution: .fill, spacing: 5.0)
@@ -57,7 +61,7 @@ class WeatherViewController: UIViewController {
         temperatureStackView = configurateNestedStackView(backGroundColor: .clear, axis: .horizontal,
                                                           alignment: .fill, distribution: .fill, spacing: 0.0)
         
-        let temperatureValueLabel = setupCustomLabel(with: "21", font: .systemFont(ofSize: 80.0, weight: .black),
+        temperatureValueLabel = setupCustomLabel(with: "21", font: .systemFont(ofSize: 80.0, weight: .black),
                                                           textColor: .black, textAlignment: .left, numOfLines: 1)
         let temperatureDegreeLabel = setupCustomLabel(with: "˚", font: .systemFont(ofSize: 100.0, weight: .light),
                                                            textColor: .black, textAlignment: .right, numOfLines: 1)
@@ -68,7 +72,7 @@ class WeatherViewController: UIViewController {
         temperatureStackView.addArrangedSubview(temperatureDegreeLabel)
         temperatureStackView.addArrangedSubview(temperatureSymbolLabel)
         
-        let cityNameLabel = setupCustomLabel(with: "Kyiv", font: .systemFont(ofSize: 50.0, weight: .light),
+        cityNameLabel = setupCustomLabel(with: "Kyiv", font: .systemFont(ofSize: 50.0, weight: .light),
                                              textColor: .black, textAlignment: .center, numOfLines: 1)
         
         mainStackView.addArrangedSubview(cityNameLabel)
@@ -153,7 +157,7 @@ class WeatherViewController: UIViewController {
         searchButton.backgroundColor = .clear
         searchButton.tintColor = .black
         searchButton.setBackgroundImage(UIImage(systemName: "magnifyingglass"), for: .normal)
-        searchButton.addTarget(self, action: #selector(buttonPressed(_:)), for: .touchUpInside)
+//        searchButton.addTarget(self, action: #selector(buttonPressed(_:)), for: .touchUpInside)
         
         setupButtonConstraints(searchButton)
     }
@@ -205,7 +209,6 @@ class WeatherViewController: UIViewController {
     //MARK: - Button action
     
     @objc func buttonPressed(_ sender: UIButton) {
-        
-        print(sender.titleLabel!)
+        locationManager.requestLocation()
     }
 }
